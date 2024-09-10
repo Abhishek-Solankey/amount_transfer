@@ -1,0 +1,19 @@
+# Money Transfer Project
+
+## Overview
+This project is a simple implementation of a money transfer feature between bank accounts. It ensures that:
+- Account balances are updated in a thread-safe manner.
+- Negative balances are not allowed.
+- Notifications are sent to both the sender and recipient.
+
+## Features
+- **Concurrency**: The balance changes are made thread-safe by using synchronization to avoid race conditions.
+- **Notification**: Each account holder is notified after a transfer is made.
+- **Unit Testing**: The code is covered with unit tests, including tests for concurrency, positive, and negative scenarios.
+
+## Further Action Points
+
+- **Enhancements**: Introduce more detailed logging and monitoring for large-scale deployments.
+- **Improved Exception Handling**: Implement a more robust error handling framework for better operational insights.
+- **Database Integration**: Currently, the project assumes in-memory repositories. Future work can include integration with a database.
+- **API Layer**: Build a REST API layer on top of this service for external interaction.
