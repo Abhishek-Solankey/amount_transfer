@@ -3,7 +3,6 @@ package com.dws.challenge.service;
 import com.dws.challenge.domain.Account;
 import com.dws.challenge.repository.AccountsRepository;
 import lombok.Getter;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -46,7 +45,7 @@ public class AccountsService {
 
     synchronized (this){
       if(accountFrom.getBalance().compareTo(amount) < 0){
-        throw new IllegalArgumentException("Insufficient balance in accountFrom");
+        throw new IllegalArgumentException("Insufficient balance in account" + accountFromId);
       }
 
       // Perform the money transfer
@@ -59,7 +58,7 @@ public class AccountsService {
     this.accountsRepository.updateAccount(accountTo);
 
     // Notify both account holders
-    emailNotificationService.notifyAboutTransfer(accountFrom , "Amount transferred : " + amount + " to account " + accountTo.getAccountId());
-    emailNotificationService.notifyAboutTransfer(accountTo , "Amount transferred : " + amount + " from account " + accountFrom.getAccountId());
+    emailNotificationService.notifyAboutTransfer(accountFrom , "Amount credited : " + amount + " to account " + accountTo.getAccountId());
+    emailNotificationService.notifyAboutTransfer(accountTo , "Amount debited : " + amount + " from account " + accountFrom.getAccountId());
   }
 }
