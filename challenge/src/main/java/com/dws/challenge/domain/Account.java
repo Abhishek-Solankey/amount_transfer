@@ -39,7 +39,7 @@ public class Account {
     balance = balance.subtract(amount);
   }
 
-  public synchronized void deposite(BigDecimal amount){
+  public synchronized void deposit(BigDecimal amount){
     balance = balance.add(amount);
   }
 }

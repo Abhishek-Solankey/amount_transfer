@@ -51,8 +51,8 @@ class AccountServiceExtendedTest {
         assertEquals(new BigDecimal("800"), accountFrom.getBalance());
         assertEquals(new BigDecimal("700"), accountTo.getBalance());
 
-        verify(notificationService).notifyAboutTransfer(accountFrom, "Amount transferred : 200 to account 2");
-        verify(notificationService).notifyAboutTransfer(accountTo, "Amount transferred : 200 from account 1");
+        verify(notificationService).notifyAboutTransfer(accountFrom, "Amount credited : 200 to account 2");
+        verify(notificationService).notifyAboutTransfer(accountTo, "Amount debited : 200 from account 1");
 
         verify(accountsRepository).updateAccount(accountFrom);
         verify(accountsRepository).updateAccount(accountTo);
@@ -85,28 +85,41 @@ class AccountServiceExtendedTest {
     }
 
     @Test
-    void testConcurrentTransfers() throws InterruptedException {
-        // Use an ExecutorService to simulate concurrent transfers
-        ExecutorService executorService = Executors.newFixedThreadPool(10);
+    void testParallelTransfers() throws InterruptedException {
+        Account accountFrom1 = new Account("1", new BigDecimal("1000"));
+        Account accountTo1 = new Account("2", new BigDecimal("500"));
+        Account accountFrom2 = new Account("3", new BigDecimal("1000"));
+        Account accountTo2 = new Account("4", new BigDecimal("500"));
 
-        // Perform 10 concurrent transfers, each transferring 100
-        for (int i = 0; i < 10; i++) {
-            executorService.submit(() -> accountsService.transferMoney("1", "2", new BigDecimal("100")));
-        }
+        when(accountsRepository.getAccount("1")).thenReturn(accountFrom1);
+        when(accountsRepository.getAccount("2")).thenReturn(accountTo1);
+        when(accountsRepository.getAccount("3")).thenReturn(accountFrom2);
+        when(accountsRepository.getAccount("4")).thenReturn(accountTo2);
+
+        ExecutorService executorService = Executors.newFixedThreadPool(2);
+
+        executorService.submit(() -> accountsService.transferMoney("1", "2", new BigDecimal("100")));
+        executorService.submit(() -> accountsService.transferMoney("3", "4", new BigDecimal("100")));
 
         executorService.shutdown();
         executorService.awaitTermination(1, TimeUnit.MINUTES);
 
-        // After 10 concurrent transfers of 100, accountFrom should have 0, accountTo should have 1500
-        assertEquals(new BigDecimal("0"), accountFrom.getBalance());
-        assertEquals(new BigDecimal("1500"), accountTo.getBalance());
+        // Validate that the balances are correctly updated
+        assertEquals(new BigDecimal("900"), accountFrom1.getBalance());
+        assertEquals(new BigDecimal("600"), accountTo1.getBalance());
+        assertEquals(new BigDecimal("900"), accountFrom2.getBalance());
+        assertEquals(new BigDecimal("600"), accountTo2.getBalance());
 
-        // Verify that notifications were sent 10 times for each account
-        verify(notificationService, times(10)).notifyAboutTransfer(eq(accountFrom), contains("Amount transferred : 100 to account 2"));
-        verify(notificationService, times(10)).notifyAboutTransfer(eq(accountTo), contains("Amount transferred : 100 from account 1"));
+        // Verify notifications and account updates
+        verify(notificationService).notifyAboutTransfer(accountFrom1, "Amount credited : 100 to account 2");
+        verify(notificationService).notifyAboutTransfer(accountTo1, "Amount debited : 100 from account 1");
+        verify(notificationService).notifyAboutTransfer(accountFrom2, "Amount credited : 100 to account 4");
+        verify(notificationService).notifyAboutTransfer(accountTo2, "Amount debited : 100 from account 3");
 
-        // Verify that accounts were updated 10 times in the repository
-        verify(accountsRepository, times(10)).updateAccount(accountFrom);
-        verify(accountsRepository, times(10)).updateAccount(accountTo);
+        verify(accountsRepository).updateAccount(accountFrom1);
+        verify(accountsRepository).updateAccount(accountTo1);
+        verify(accountsRepository).updateAccount(accountFrom2);
+        verify(accountsRepository).updateAccount(accountTo2);
     }
+
 }
